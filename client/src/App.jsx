@@ -5,8 +5,8 @@ import Login from "./assets/Login";
 import MainPage from "./assets/MainPage";
 import PublicLayout from "./layouts/PublicLayout";
 import Homepage from "./pages/Homepage";
-// import About from "./pages/About";
-// import Contact from "./pages/Contact";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
 
 export default function App() {
   return (
@@ -15,8 +15,8 @@ export default function App() {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Homepage />} />
-          {/* <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} /> */}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
         </Route>
       </Routes>
     </BrowserRouter>
