@@ -8,17 +8,21 @@ export const signup = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    if (!email?.trim() || !password?.trim()) {
+      return res.status(400).json({ message: "Email and password are required and cannot be empty" });
+    }
+
+    const existingUser = await User.findOne({ email: email.trim() });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
-    const secret = speakeasy.generateSecret({ name: `Notes Manager (${email})` });
+    const secret = speakeasy.generateSecret({ name: `Notes Manager (${email.trim()})` });
     const qrCodeDataURL = await qrcode.toDataURL(secret.otpauth_url);
 
-    const user = new User({ email, password: hashedPassword, mfaSecret: secret.base32 });
+    const user = new User({ email: email.trim(), password: hashedPassword, mfaSecret: secret.base32 });
     await user.save();
 
     try {
@@ -43,13 +47,17 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password, token } = req.body;
-    const user = await User.findOne({ email });
 
+    if (!email?.trim() || !password?.trim() || !token?.trim()) {
+      return res.status(400).json({ message: "Email, password and token are required and cannot be empty" });
+    }
+
+    const user = await User.findOne({ email: email.trim() });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password.trim(), user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -57,7 +65,7 @@ export const login = async (req, res) => {
     const verified = speakeasy.totp.verify({
       secret: user.mfaSecret,
       encoding: "base32",
-      token,
+      token: token.trim(),
       window: 1,
     });
 

@@ -1,9 +1,12 @@
 import Task from "../models/Task.js";
 
-// Create Task
 export const createTask = async (req, res) => {
   try {
     const { title, description, status, dueDate, userId } = req.body;
+
+    if (!title?.trim() || !description?.trim() || !status?.trim() || !dueDate?.trim() || !userId?.trim()) {
+      return res.status(400).json({ message: "Title, description, status, dueDate and userId are required and cannot be empty" });
+    }
 
     const task = new Task({ title, description, status, dueDate, user: userId });
     await task.save();
@@ -14,7 +17,6 @@ export const createTask = async (req, res) => {
   }
 };
 
-// Get All Tasks
 export const getTasks = async (req, res) => {
   try {
     const tasks = await Task.find().populate("user", "email");
@@ -24,7 +26,6 @@ export const getTasks = async (req, res) => {
   }
 };
 
-// Get Single Task
 export const getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id).populate("user", "email");
@@ -35,10 +36,14 @@ export const getTaskById = async (req, res) => {
   }
 };
 
-// Update Task
 export const updateTask = async (req, res) => {
   try {
     const { title, description, status, dueDate } = req.body;
+
+    if (!title?.trim() || !description?.trim() || !status?.trim() || !dueDate?.trim()) {
+      return res.status(400).json({ message: "Title, description, status and dueDate are required and cannot be empty" });
+    }
+
     const task = await Task.findByIdAndUpdate(
       req.params.id,
       { title, description, status, dueDate },
@@ -51,7 +56,6 @@ export const updateTask = async (req, res) => {
   }
 };
 
-// Delete Task
 export const deleteTask = async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
