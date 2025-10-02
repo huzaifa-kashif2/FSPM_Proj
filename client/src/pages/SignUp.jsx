@@ -1,8 +1,31 @@
 // SignUp.jsx
 import React from "react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const SignUp = () => {
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [buttonClick, setButtonClick] = useState(false);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    console.log("Form Data: ", formData);
+    setButtonClick(true);
+    e.target.innerText = "Creating Account...";
+    e.target.disabled = buttonClick;
+
+    //Send the request to the server
+  };
+
+  const handleChange = (e) => {
+    console.log(e.target.name);
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
   return (
     // Outer container for centering and light background
     <div
@@ -38,8 +61,11 @@ const SignUp = () => {
                 type="text"
                 className="form-control"
                 id="fullName"
+                name="fullName"
+                value={formData.fullName}
                 placeholder="Enter your full name"
                 required
+                onChange={handleChange}
               />
             </div>
 
@@ -52,8 +78,11 @@ const SignUp = () => {
                 type="email"
                 className="form-control"
                 id="email"
+                name="email"
+                value={formData.email}
                 placeholder="name@example.com"
                 required
+                onChange={handleChange}
               />
             </div>
 
@@ -66,8 +95,11 @@ const SignUp = () => {
                 type="password"
                 className="form-control"
                 id="password"
+                name="password"
+                value={formData.password}
                 placeholder="Create a password"
                 required
+                onChange={handleChange}
               />
             </div>
 
@@ -83,8 +115,11 @@ const SignUp = () => {
                 type="password"
                 className="form-control"
                 id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
                 placeholder="Repeat password"
                 required
+                onChange={handleChange}
               />
             </div>
 
@@ -92,6 +127,7 @@ const SignUp = () => {
             <button
               type="submit"
               className="btn w-100 fw-bold py-2 text-white mb-3"
+              onClick={handleClick}
               style={{ backgroundColor: "#319795", borderColor: "#319795" }}
             >
               Sign Up

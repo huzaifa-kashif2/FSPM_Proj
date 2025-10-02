@@ -1,8 +1,29 @@
 // SignIn.jsx
 import React from "react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const SignIn = () => {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [buttonClick, setButtonClick] = useState(false);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    console.log("Form Data: ", formData);
+    setButtonClick(true);
+    e.target.innerText = "Signing In...";
+    e.target.disabled = buttonClick;
+
+    //Send the request to the server
+  };
+
+  const handleChange = (e) => {
+    console.log(e.target.name);
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
   return (
     // Outer container for centering and light background
     <div
@@ -38,8 +59,11 @@ const SignIn = () => {
                 type="email"
                 className="form-control"
                 id="email"
+                name="email"
+                value={formData.email}
                 placeholder="name@example.com"
                 required
+                onChange={handleChange}
               />
             </div>
 
@@ -52,8 +76,11 @@ const SignIn = () => {
                 type="password"
                 className="form-control"
                 id="password"
+                name="password"
+                value={formData.password}
                 placeholder="Enter your password"
                 required
+                onChange={handleChange}
               />
             </div>
 
@@ -62,6 +89,7 @@ const SignIn = () => {
               type="submit"
               className="btn w-100 fw-bold py-2 text-white mb-3"
               style={{ backgroundColor: "#319795", borderColor: "#319795" }}
+              onClick={handleClick}
             >
               Sign In
             </button>

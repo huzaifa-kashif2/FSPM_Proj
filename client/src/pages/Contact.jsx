@@ -25,6 +25,15 @@ const Contact = () => {
     // setFormData({ name: '', email: '', subject: '', message: '' });
   };
 
+  const sendAnother = () => {
+    setFormData({
+      ...formData,
+      subject: "",
+      message: "",
+    });
+    setIsSubmitted(false);
+  };
+
   return (
     <div className="container py-5" id="contact">
       <div className="row justify-content-center">
@@ -56,7 +65,7 @@ const Contact = () => {
                       <button
                         className="btn mt-3 rounded-pill text-white fw-bold px-4"
                         style={{ backgroundColor: accentColor }}
-                        onClick={() => setIsSubmitted(false)}
+                        onClick={sendAnother}
                       >
                         Send Another Message
                       </button>

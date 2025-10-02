@@ -2,3 +2,11 @@
   height: 545px;
   width: 545px;
 }
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}

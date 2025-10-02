@@ -1,0 +1,46 @@
+/* Sidebar.css */
+
+.sidebar {
+  /* Fixed position, height, and width are necessary for a sidebar */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  z-index: 1030;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out; /* Smooth slide effect */
+}
+
+/* Ensure links stand out and have a hover effect */
+.sidebar .nav-link {
+  /* Use a utility class like 'text-white' in the component, but define hover here */
+  padding: 10px 15px;
+  border-radius: 5px;
+  opacity: 0.8; /* Slightly less opaque by default */
+}
+
+.sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle hover effect */
+  opacity: 1;
+}
+
+/* --- Responsiveness and State Classes --- */
+
+/* Default desktop state: always visible */
+.sidebar.closed {
+  transform: translateX(0);
+}
+
+/* Mobile/Tablet View */
+@media (max-width: 768px) {
+  /* Default state on small screens: hidden off-screen */
+  .sidebar {
+    transform: translateX(-250px);
+  }
+
+  /* When 'open' class is added: move it into view */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
