@@ -22,9 +22,7 @@ export default function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
         </Route>
-        <Route>
-          <Route path="/dash" element={<Dashboard />} />
-        </Route>
+        <Route path="/dashboard/*" element={<Dashboard />} />
         {/* <Route element={<ProtectedRoute />}>
             <Route element={<PrivateLayout />}>
               {/* This is the private page that appears after successful sign-in */}
