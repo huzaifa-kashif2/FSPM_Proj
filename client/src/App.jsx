@@ -8,8 +8,6 @@ import Homepage from "./pages/Homepage";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import PrivateLayout from "./layouts/PrivateLayout";
-import { AuthProvider } from "./auth/AuthProvider";
-import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 
 export default function App() {
