@@ -14,6 +14,8 @@ const Dashboard = () => {
   const location = useLocation();
   const { user } = useAuth();
 
+  console.log("Current user in Dashboard:", user);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -47,7 +49,9 @@ const Dashboard = () => {
           }}
         >
           {location.pathname === "/dashboard" && <DashboardHome user={user} />}
-          {location.pathname === "/dashboard/tasks" && <DashboardTasks />}
+          {location.pathname === "/dashboard/tasks" && (
+            <DashboardTasks user={user} />
+          )}
           {location.pathname === "/dashboard/notes" && <DashboardNotes />}
           {location.pathname === "/dashboard/settings" && <Settings />}
           {location.pathname === "/dashboard/profile" && <Profile />}

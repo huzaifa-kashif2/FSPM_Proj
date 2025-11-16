@@ -44,6 +44,19 @@ export const getTasks = async (req, res) => {
   }
 };
 
+export const getTasksForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ message: "userId is required" });
+    const tasks = await Task.find({ user: userId }).populate("user", "email");
+    res.json(tasks);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching tasks", error: err.message });
+  }
+};
+
 export const getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id).populate("user", "email");

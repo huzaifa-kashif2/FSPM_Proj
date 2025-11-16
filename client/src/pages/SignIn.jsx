@@ -82,6 +82,7 @@ const SignIn = () => {
       }
       if (data?.user) {
         localStorage.setItem("authUser", JSON.stringify(data.user));
+        console.log("Logged in user:", data.user);
         setUser(data.user);
       }
       setShowMfa(false);

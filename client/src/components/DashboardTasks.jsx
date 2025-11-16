@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   PlusCircle,
   Search,
@@ -9,37 +9,28 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
+import { useEffect } from "react";
+import { tasksApi } from "../api/tasksApi";
+import AddTaskModal from "./AddTaskModal";
+import EditTaskModal from "./EditTaskModal";
 
-const DashboardTasks = () => {
+const DashboardTasks = ({ user }) => {
   const accentColor = "#319795";
+  const [tasks, setTasks] = useState([]);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [showEditTask, setShowEditTask] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
 
-  // Sample tasks data - replace with your actual data/API calls
-  const [tasks] = useState([
-    {
-      id: 1,
-      title: "Complete Project Proposal",
-      description: "Write and submit the project proposal document",
-      status: "pending",
-      priority: "high",
-      dueDate: "2025-10-05",
-    },
-    {
-      id: 2,
-      title: "Review Documentation",
-      description: "Review and update project documentation",
-      status: "in-progress",
-      priority: "medium",
-      dueDate: "2025-10-03",
-    },
-    {
-      id: 3,
-      title: "Team Meeting",
-      description: "Weekly team sync meeting",
-      status: "completed",
-      priority: "low",
-      dueDate: "2025-10-02",
-    },
-  ]);
+  const fetchTasks = useCallback(async () => {
+    const uid = user?.id || user?._id;
+    if (!uid) return;
+    const { data } = await tasksApi.getTasksByUser(uid);
+    setTasks(Array.isArray(data) ? data : []);
+  }, [user]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,13 +69,24 @@ const DashboardTasks = () => {
   };
 
   const handleEdit = (task) => {
-    // TODO: replace with edit modal/navigation
-    console.log("Edit task", task);
+    setSelectedTask(task);
+    setShowEditTask(true);
   };
 
-  const handleDelete = (taskId) => {
-    // TODO: replace with real delete logic
+  const handleDelete = async (taskId) => {
     console.log("Delete task", taskId);
+    if (!taskId) return;
+    try {
+      const deleteTask = await tasksApi.deleteTask(taskId);
+      fetchTasks();
+      console.log(deleteTask);
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    }
+  };
+
+  const handleClick = () => {
+    setShowAddTask(true);
   };
 
   return (
@@ -95,6 +97,7 @@ const DashboardTasks = () => {
         <button
           className="btn btn-primary d-flex align-items-center gap-2"
           style={{ backgroundColor: accentColor, borderColor: accentColor }}
+          onClick={handleClick}
         >
           <PlusCircle size={20} />
           Add New Task
@@ -154,7 +157,7 @@ const DashboardTasks = () => {
                   </thead>
                   <tbody>
                     {filteredTasks.map((task) => (
-                      <tr key={task.id}>
+                      <tr key={task.id || task._id}>
                         <td className="px-4">
                           <div className="d-flex align-items-center gap-2">
                             {getStatusIcon(task.status)}
@@ -216,7 +219,7 @@ const DashboardTasks = () => {
                               className="btn btn-link p-0"
                               title="Delete"
                               aria-label={`Delete ${task.title}`}
-                              onClick={() => handleDelete(task.id)}
+                              onClick={() => handleDelete(task._id)}
                             >
                               <Trash2 size={18} className="text-danger" />
                             </button>
@@ -231,6 +234,34 @@ const DashboardTasks = () => {
           </div>
         </div>
       </div>
+      {showAddTask && (
+        <AddTaskModal
+          open={showAddTask}
+          onClose={() => setShowAddTask(false)}
+          onCreated={() => {
+            setShowAddTask(false);
+            fetchTasks(); // get fresh list from server
+          }}
+          userId={user?.id || user?._id}
+        />
+      )}
+      {showEditTask && (
+        <EditTaskModal
+          open={showEditTask}
+          task={selectedTask}
+          onClose={() => {
+            setShowEditTask(false);
+            setSelectedTask(null);
+          }}
+          onSubmit={async () => {
+            // Placeholder for user to implement update logic.
+            // Intentionally no API call here.
+            setShowEditTask(false);
+            setSelectedTask(null);
+            await fetchTasks();
+          }}
+        />
+      )}
     </div>
   );
 };

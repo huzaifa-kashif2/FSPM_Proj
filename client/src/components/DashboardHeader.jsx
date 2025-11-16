@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { Menu, X } from "lucide-react";
@@ -8,6 +8,18 @@ const DashboardHeader = ({ toggleSidebar, isOpen }) => {
   const navigate = useNavigate();
   const accentColor = "#319795"; // Teal accent color
   const { user } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -91,32 +103,48 @@ const DashboardHeader = ({ toggleSidebar, isOpen }) => {
         </div>
       </div>
       <div className="right-side d-flex align-items-center gap-4">
-        <div className="notifications position-relative">
-          <i className="bi bi-bell-fill fs-5" style={{ color: "#666" }}></i>
-          <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-            <span className="visually-hidden">New notifications</span>
-          </span>
-        </div>
-        <div className="profile d-flex align-items-center gap-2">
-          <div
-            className="d-flex align-items-center justify-content-center rounded-circle bg-secondary"
-            style={{
-              width: "35px",
-              height: "35px",
-              backgroundColor: "#319795",
-            }}
+        <div className="dropdown" ref={dropdownRef}>
+          <button
+            id="userMenuButton"
+            className="btn d-flex align-items-center gap-2 p-0 border-0 bg-transparent"
+            aria-expanded={isDropdownOpen}
+            aria-haspopup="true"
+            onClick={() => setIsDropdownOpen((prev) => !prev)}
+            style={{ boxShadow: "none" }}
           >
-            <i className="bi bi-person-fill text-white"></i>
+            <div
+              className="d-flex align-items-center justify-content-center rounded-circle"
+              style={{
+                width: "35px",
+                height: "35px",
+                backgroundColor: "#319795",
+              }}
+            >
+              <i className="bi bi-person-fill text-white"></i>
+            </div>
+            <span className="text-dark">{user?.fullName}</span>
+            <i
+              className={`bi ms-1 ${
+                isDropdownOpen ? "bi-caret-up-fill" : "bi-caret-down-fill"
+              }`}
+              style={{ color: "#666" }}
+            ></i>
+          </button>
+          <div
+            className={`dropdown-menu dropdown-menu-end mt-2 ${
+              isDropdownOpen ? "show" : ""
+            }`}
+            aria-labelledby="userMenuButton"
+            style={{ minWidth: "160px" }}
+          >
+            <button
+              className="dropdown-item text-danger"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
-          <span className="text-dark">{user?.fullName}</span>
         </div>
-        <button
-          className="btn btn-outline-danger btn-sm"
-          onClick={handleLogout}
-          title="Log out"
-        >
-          Logout
-        </button>
       </div>
     </header>
   );

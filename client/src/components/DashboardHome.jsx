@@ -10,17 +10,21 @@ const DashboardHome = ({ user }) => {
 
   const fetchTasks = async () => {
     try {
-      const response = await tasksApi.getTasks();
-      setTasks(response.data);
+      const uid = user?.id || user?._id;
+      console.log("Fetching tasks for user ID:", uid);
+      if (!uid) return;
+      const response = await tasksApi.getTasksByUser(uid);
+      setTasks(response.data || []);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
   };
 
   useEffect(() => {
-    // Fetch tasks on mount
+    // Fetch tasks when user becomes available
     fetchTasks();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Placeholder data
   const formatDate = (dateStr) => {
@@ -153,7 +157,7 @@ const DashboardHome = ({ user }) => {
                     </thead>
                     <tbody>
                       {recentTasks.map((task) => (
-                        <tr key={task.id}>
+                        <tr key={task.id || task._id}>
                           <td>{task.title}</td>
                           <td>{task.deadline}</td>
                           <td>
@@ -229,7 +233,7 @@ const DashboardHome = ({ user }) => {
                   <div className="list-group list-group-flush">
                     {tasksUrgent.map((task) => (
                       <div
-                        key={task.id}
+                        key={task._id}
                         className="list-group-item d-flex justify-content-between align-items-center px-0"
                       >
                         <div>
