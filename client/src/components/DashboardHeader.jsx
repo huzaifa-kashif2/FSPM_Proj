@@ -1,9 +1,25 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { authApi } from "../api/authApi";
 import { Menu, X } from "lucide-react";
 
 const DashboardHeader = ({ toggleSidebar, isOpen }) => {
+  const navigate = useNavigate();
   const accentColor = "#319795"; // Teal accent color
+
+  const handleLogout = async () => {
+    try {
+      // Call server logout (optional; server may clear cookies/audit)
+      await authApi.logout();
+    } catch (e) {
+      // proceed even if request fails
+      console.error("Logout error:", e);
+    } finally {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+      navigate("/signin", { replace: true });
+    }
+  };
   return (
     // Main Header Container: Full-width top bar
     <header
@@ -92,6 +108,13 @@ const DashboardHeader = ({ toggleSidebar, isOpen }) => {
           </div>
           <span className="text-dark">John Doe</span>
         </div>
+        <button
+          className="btn btn-outline-danger btn-sm"
+          onClick={handleLogout}
+          title="Log out"
+        >
+          Logout
+        </button>
       </div>
     </header>
   );

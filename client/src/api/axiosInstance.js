@@ -21,7 +21,16 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Handle unauthorized access (e.g., redirect to login)
+      try {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("authUser");
+      } catch {}
+      if (typeof window !== "undefined") {
+        const current = window.location.pathname;
+        if (current !== "/signin") {
+          window.location.replace("/signin");
+        }
+      }
     }
     return Promise.reject(error);
   }

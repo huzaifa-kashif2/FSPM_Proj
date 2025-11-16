@@ -1,28 +1,101 @@
 // SignIn.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { authApi } from "../api/authApi";
 
 const SignIn = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [buttonClick, setButtonClick] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [showMfa, setShowMfa] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaSubmitting, setMfaSubmitting] = useState(false);
+  const [mfaError, setMfaError] = useState("");
 
-  const handleClick = (e) => {
+  const handleClick = async (e) => {
     e.preventDefault();
-    console.log("Form Data: ", formData);
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+    // First validate credentials with server; only show MFA if valid
     setButtonClick(true);
-    e.target.innerText = "Signing In...";
-    e.target.disabled = buttonClick;
-
-    //Send the request to the server
+    setFormError("");
+    try {
+      const { data } = await authApi.login({
+        email: formData.email,
+        password: formData.password,
+      });
+      // If server indicates MFA is required, open the MFA modal
+      if (data?.mfaRequired) {
+        setShowMfa(true);
+      } else if (data?.token) {
+        // In case server ever returns full login without MFA
+        localStorage.setItem("authToken", data.token);
+        if (data?.user) {
+          localStorage.setItem("authUser", JSON.stringify(data.user));
+        }
+        navigate("/dashboard", { replace: true });
+      } else {
+        // Fallback: unexpected response
+        setFormError("Unexpected response from server.");
+      }
+    } catch (error) {
+      setFormError(error?.response?.data?.message || "Invalid credentials");
+    } finally {
+      setButtonClick(false);
+    }
   };
 
   const handleChange = (e) => {
     console.log(e.target.name);
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleMfaSubmit = async (e) => {
+    e.preventDefault();
+    if (!mfaCode || mfaCode.length < 4) {
+      setMfaError("Please enter your MFA code.");
+      return;
+    }
+    setMfaError("");
+    setMfaSubmitting(true);
+    setButtonClick(true);
+    try {
+      const { data } = await authApi.login({
+        email: formData.email,
+        password: formData.password,
+        token: mfaCode,
+      });
+      if (data?.token) {
+        localStorage.setItem("authToken", data.token);
+      }
+      if (data?.user) {
+        localStorage.setItem("authUser", JSON.stringify(data.user));
+      }
+      setShowMfa(false);
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      console.error("Login error:", error);
+      setMfaError(
+        error?.response?.data?.message || "Invalid code or login failed."
+      );
+    } finally {
+      setMfaSubmitting(false);
+      setButtonClick(false);
+    }
+  };
+
+  const handleMfaCancel = () => {
+    setShowMfa(false);
+    setMfaCode("");
+    setMfaError("");
   };
   return (
     // Outer container for centering and light background
@@ -50,6 +123,11 @@ const SignIn = () => {
           </h4>
 
           <form>
+            {formError && (
+              <div className="alert alert-danger py-2" role="alert">
+                {formError}
+              </div>
+            )}
             {/* Email Input */}
             <div className="mb-3">
               <label htmlFor="email" className="form-label text-muted">
@@ -90,6 +168,7 @@ const SignIn = () => {
               className="btn w-100 fw-bold py-2 text-white mb-3"
               style={{ backgroundColor: "#319795", borderColor: "#319795" }}
               onClick={handleClick}
+              disabled={buttonClick}
             >
               Sign In
             </button>
@@ -121,6 +200,77 @@ const SignIn = () => {
           </form>
         </div>
       </div>
+
+      {/* MFA Modal */}
+      {showMfa && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="card shadow p-3"
+            style={{ width: "100%", maxWidth: 400, borderRadius: "0.75rem" }}
+          >
+            <div className="card-body">
+              <h5 className="fw-bold mb-2 text-center">Enter MFA Code</h5>
+              <p className="text-muted small text-center mb-3">
+                Please enter the 6-digit code from your authenticator app.
+              </p>
+              <form onSubmit={handleMfaSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="mfa" className="form-label text-muted">
+                    MFA Code
+                  </label>
+                  <input
+                    id="mfa"
+                    name="mfa"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    autoFocus
+                    className="form-control text-center fs-5"
+                    placeholder="••••••"
+                    value={mfaCode}
+                    onChange={(ev) => {
+                      const v = ev.target.value.replace(/\D/g, "");
+                      setMfaCode(v);
+                    }}
+                  />
+                </div>
+                {mfaError && (
+                  <div className="alert alert-danger py-2" role="alert">
+                    {mfaError}
+                  </div>
+                )}
+                <div className="d-flex gap-2">
+                  <button
+                    type="submit"
+                    className="btn flex-fill text-white fw-bold"
+                    style={{
+                      backgroundColor: "#319795",
+                      borderColor: "#319795",
+                    }}
+                    disabled={mfaSubmitting || mfaCode.length < 4}
+                  >
+                    {mfaSubmitting ? "Verifying..." : "Verify"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary flex-fill"
+                    onClick={handleMfaCancel}
+                    disabled={mfaSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
