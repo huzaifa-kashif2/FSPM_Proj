@@ -7,10 +7,12 @@ import DashboardNotes from "../components/DashboardNotes";
 import Settings from "../components/Settings";
 import Profile from "../components/Profile";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const { user } = useAuth();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -44,7 +46,7 @@ const Dashboard = () => {
             width: "100%",
           }}
         >
-          {location.pathname === "/dashboard" && <DashboardHome />}
+          {location.pathname === "/dashboard" && <DashboardHome user={user} />}
           {location.pathname === "/dashboard/tasks" && <DashboardTasks />}
           {location.pathname === "/dashboard/notes" && <DashboardNotes />}
           {location.pathname === "/dashboard/settings" && <Settings />}

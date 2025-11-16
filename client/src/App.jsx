@@ -10,23 +10,26 @@ import SignUp from "./pages/SignUp";
 import PrivateLayout from "./layouts/PrivateLayout";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthProvider";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-        </Route>
-        <Route element={<ProtectedRoute />}>
-          {/* <Route element={<PrivateLayout />}> */}
-          <Route path="/dashboard/*" element={<Dashboard />} />
-          {/* </Route> */}
-        </Route>
-        <Route path="*" element={<h1>404 Not Found</h1>} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Homepage />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+          </Route>
+          <Route element={<ProtectedRoute />}>
+            {/* <Route element={<PrivateLayout />}> */}
+            <Route path="/dashboard/*" element={<Dashboard />} />
+            {/* </Route> */}
+          </Route>
+          <Route path="*" element={<h1>404 Not Found</h1>} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

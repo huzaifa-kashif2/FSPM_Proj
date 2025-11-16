@@ -3,9 +3,11 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { authApi } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -41,10 +43,12 @@ const SignIn = () => {
         if (data?.user) {
           localStorage.setItem("authUser", JSON.stringify(data.user));
         }
-        navigate("/dashboard", { replace: true });
       } else {
         // Fallback: unexpected response
         setFormError("Unexpected response from server.");
+      }
+      if (data?.user) {
+        setUser(data.user);
       }
     } catch (error) {
       setFormError(error?.response?.data?.message || "Invalid credentials");
@@ -78,6 +82,7 @@ const SignIn = () => {
       }
       if (data?.user) {
         localStorage.setItem("authUser", JSON.stringify(data.user));
+        setUser(data.user);
       }
       setShowMfa(false);
       navigate("/dashboard", { replace: true });

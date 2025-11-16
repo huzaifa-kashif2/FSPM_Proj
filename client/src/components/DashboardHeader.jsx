@@ -2,10 +2,12 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const DashboardHeader = ({ toggleSidebar, isOpen }) => {
   const navigate = useNavigate();
   const accentColor = "#319795"; // Teal accent color
+  const { user } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -106,7 +108,7 @@ const DashboardHeader = ({ toggleSidebar, isOpen }) => {
           >
             <i className="bi bi-person-fill text-white"></i>
           </div>
-          <span className="text-dark">John Doe</span>
+          <span className="text-dark">{user?.fullName}</span>
         </div>
         <button
           className="btn btn-outline-danger btn-sm"

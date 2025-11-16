@@ -3,17 +3,18 @@ import {
   PlusCircle,
   Search,
   Filter,
-  MoreVertical,
   CheckCircle2,
   Circle,
   Clock,
+  Edit,
+  Trash2,
 } from "lucide-react";
 
 const DashboardTasks = () => {
   const accentColor = "#319795";
 
   // Sample tasks data - replace with your actual data/API calls
-  const [tasks, setTasks] = useState([
+  const [tasks] = useState([
     {
       id: 1,
       title: "Complete Project Proposal",
@@ -74,6 +75,16 @@ const DashboardTasks = () => {
       default:
         return "secondary";
     }
+  };
+
+  const handleEdit = (task) => {
+    // TODO: replace with edit modal/navigation
+    console.log("Edit task", task);
+  };
+
+  const handleDelete = (taskId) => {
+    // TODO: replace with real delete logic
+    console.log("Delete task", taskId);
   };
 
   return (
@@ -190,30 +201,25 @@ const DashboardTasks = () => {
                           </span>
                         </td>
                         <td>
-                          <div className="dropdown">
+                          <div className="d-flex align-items-center gap-2">
                             <button
-                              className="btn btn-link text-dark p-0"
-                              data-bs-toggle="dropdown"
+                              type="button"
+                              className="btn btn-link p-0"
+                              title="Edit"
+                              aria-label={`Edit ${task.title}`}
+                              onClick={() => handleEdit(task)}
                             >
-                              <MoreVertical size={18} />
+                              <Edit size={18} className="text-primary" />
                             </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <button className="dropdown-item">
-                                  Edit Task
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item">
-                                  Mark as Complete
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger">
-                                  Delete Task
-                                </button>
-                              </li>
-                            </ul>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0"
+                              title="Delete"
+                              aria-label={`Delete ${task.title}`}
+                              onClick={() => handleDelete(task.id)}
+                            >
+                              <Trash2 size={18} className="text-danger" />
+                            </button>
                           </div>
                         </td>
                       </tr>
