@@ -6,26 +6,26 @@ import authRoutes from "./routes/authRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import noteRoutes from "./routes/noteRoutes.js";
 
-
-
 dotenv.config();
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log("MongoDB error:", err));
+  .catch((err) => console.log("MongoDB error:", err));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notes", noteRoutes);
-
 
 app.get("/", (req, res) => {
   res.send("API is running...");

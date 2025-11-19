@@ -75,8 +75,9 @@ const DashboardSidebar = ({ isOpen }) => {
         </li>
         <li className="nav-item mb-2">
           <Link
-            to="/plagiarism-checker"
-            className="nav-link text-white d-flex align-items-center"
+            to="/dashboard/ai-check"
+            className={getNavLinkClass("/dashboard/ai-check")}
+            style={navLinkStyle}
           >
             <BookCheck size={18} className="me-2" />
             AI Plagiarism Checker

@@ -1,45 +1,39 @@
 import React, { useState } from "react";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  Calendar,
-  Edit2,
-  Camera,
-  CheckCircle,
-  Award,
-  BookOpen,
-  Clock,
-} from "lucide-react";
+import { User, Mail, Edit2, Camera, CheckCircle, BookOpen } from "lucide-react";
 
 const Profile = () => {
   const accentColor = "#319795";
 
   // Sample user data - replace with actual user data from your backend
-  const [user, setUser] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 234 567 890",
-    location: "New York, USA",
-    department: "Computer Science",
-    joinDate: "2025-08-15",
-    avatar: null, // URL for profile picture
-    bio: "Senior Computer Science student passionate about software development and AI.",
+  const [user, setUser] = useState(() => {
+    // Attempt to pull from localStorage authUser to stay consistent
+    try {
+      const stored = JSON.parse(localStorage.getItem("authUser") || "null");
+      return {
+        name: stored?.fullName || stored?.name || "User",
+        email: stored?.email || "user@example.com",
+        avatar: null,
+        bio: "Manage your tasks and notes efficiently.",
+      };
+    } catch {
+      return {
+        name: "User",
+        email: "user@example.com",
+        avatar: null,
+        bio: "Manage your tasks and notes efficiently.",
+      };
+    }
   });
 
   // Sample statistics
   const statistics = [
     {
       title: "Tasks Completed",
-      value: "124",
+      value: "--",
       icon: CheckCircle,
       color: "#319795",
     },
-    { title: "Notes Created", value: "45", icon: BookOpen, color: "#3182CE" },
-    { title: "Study Hours", value: "256", icon: Clock, color: "#DD6B20" },
-    { title: "Achievements", value: "12", icon: Award, color: "#D69E2E" },
+    { title: "Notes Created", value: "--", icon: BookOpen, color: "#3182CE" },
   ];
 
   const handleImageUpload = (event) => {
@@ -116,11 +110,11 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Statistics */}
+        {/* Productivity Stats */}
         <div className="col-12">
           <div className="row g-4">
             {statistics.map((stat, index) => (
-              <div key={index} className="col-md-6 col-lg-3">
+              <div key={index} className="col-sm-6 col-lg-3">
                 <div className="card border-0 shadow-sm h-100">
                   <div className="card-body">
                     <div className="d-flex align-items-center">
@@ -131,7 +125,7 @@ const Profile = () => {
                         <stat.icon size={24} color={stat.color} />
                       </div>
                       <div>
-                        <h3 className="h2 mb-0">{stat.value}</h3>
+                        <h3 className="h4 mb-0">{stat.value}</h3>
                         <p className="text-muted small mb-0">{stat.title}</p>
                       </div>
                     </div>
@@ -142,56 +136,73 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Personal Information */}
+        {/* Core Account Info */}
         <div className="col-12">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <h4 className="card-title mb-4">Personal Information</h4>
+              <h4 className="card-title mb-4">Account</h4>
               <div className="row g-4">
                 <div className="col-md-6">
-                  <div className="mb-4">
-                    <div className="d-flex align-items-center text-muted mb-2">
-                      <Mail size={18} className="me-2" />
-                      <span className="small">Email Address</span>
-                    </div>
-                    <div className="fw-medium">{user.email}</div>
+                  <div className="mb-3">
+                    <label className="form-label">Full Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={user.name}
+                      onChange={(e) =>
+                        setUser((p) => ({ ...p, name: e.target.value }))
+                      }
+                      disabled
+                    />
+                    <small className="text-muted">
+                      (Editable implementation pending)
+                    </small>
                   </div>
-                  <div className="mb-4">
-                    <div className="d-flex align-items-center text-muted mb-2">
-                      <Phone size={18} className="me-2" />
-                      <span className="small">Phone Number</span>
-                    </div>
-                    <div className="fw-medium">{user.phone}</div>
+                  <div className="mb-3">
+                    <label className="form-label d-flex align-items-center">
+                      <Mail size={16} className="me-2" /> Email
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      value={user.email}
+                      disabled
+                    />
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="mb-4">
-                    <div className="d-flex align-items-center text-muted mb-2">
-                      <MapPin size={18} className="me-2" />
-                      <span className="small">Location</span>
+                  <label className="form-label">
+                    Change Password (placeholder)
+                  </label>
+                  <div className="row g-2 mb-2">
+                    <div className="col-12 col-lg-4">
+                      <input
+                        type="password"
+                        className="form-control"
+                        placeholder="Current"
+                        disabled
+                      />
                     </div>
-                    <div className="fw-medium">{user.location}</div>
+                    <div className="col-12 col-lg-4">
+                      <input
+                        type="password"
+                        className="form-control"
+                        placeholder="New"
+                        disabled
+                      />
+                    </div>
+                    <div className="col-12 col-lg-4">
+                      <input
+                        type="password"
+                        className="form-control"
+                        placeholder="Confirm"
+                        disabled
+                      />
+                    </div>
                   </div>
-                  <div className="mb-4">
-                    <div className="d-flex align-items-center text-muted mb-2">
-                      <Briefcase size={18} className="me-2" />
-                      <span className="small">Department</span>
-                    </div>
-                    <div className="fw-medium">{user.department}</div>
-                  </div>
-                  <div className="mb-4">
-                    <div className="d-flex align-items-center text-muted mb-2">
-                      <Calendar size={18} className="me-2" />
-                      <span className="small">Joined</span>
-                    </div>
-                    <div className="fw-medium">
-                      {new Date(user.joinDate).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </div>
-                  </div>
+                  <small className="text-muted">
+                    Password update flow will be added later.
+                  </small>
                 </div>
               </div>
             </div>

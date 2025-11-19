@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   PlusCircle,
   Search,
@@ -10,52 +10,93 @@ import {
   Edit3,
   Trash2,
 } from "lucide-react";
+import { notesApi } from "../api/notesApi";
+import AddNoteModal from "./AddNoteModal";
+import EditNoteModal from "./EditNoteModal";
 
-const DashboardNotes = () => {
+const DashboardNotes = ({ user }) => {
   const accentColor = "#319795";
   const [viewMode, setViewMode] = useState("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
+  const [notes, setNotes] = useState([]);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [showEditNote, setShowEditNote] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+  console.log("User in Notes:", user);
+
+  const colorOne = "#FEF3C7"; // Yellow-100
+  const colorTwo = "#DBEAFE"; // Blue-100
+  const colorThree = "#F3E8FF"; // Purple-100
+
+  const coloredNotes = notes.map((note, index) => ({
+    ...note,
+    color: note.color || [colorOne, colorTwo, colorThree][index % 3],
+  }));
 
   // Sample notes data - replace with your actual data/API calls
-  const [notes, setNotes] = useState([
-    {
-      id: 1,
-      title: "Project Requirements",
-      content: "Key requirements for the new project phase...",
-      tags: ["work", "important"],
-      color: "#FEF3C7",
-      date: "2025-10-02",
-    },
-    {
-      id: 2,
-      title: "Meeting Notes",
-      content: "Discussion points from today's team meeting...",
-      tags: ["work", "meeting"],
-      color: "#DBEAFE",
-      date: "2025-10-02",
-    },
-    {
-      id: 3,
-      title: "Research Topics",
-      content: "Key areas to research for the upcoming presentation...",
-      tags: ["research", "important"],
-      color: "#F3E8FF",
-      date: "2025-10-01",
-    },
-  ]);
+  // const [notes, setNotes] = useState([
+  //   {
+  //     id: 1,
+  //     title: "Project Requirements",
+  //     content: "Key requirements for the new project phase...",
+  //     tags: ["work", "important"],
+  //     color: "#FEF3C7",
+  //     date: "2025-10-02",
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Meeting Notes",
+  //     content: "Discussion points from today's team meeting...",
+  //     tags: ["work", "meeting"],
+  //     color: "#DBEAFE",
+  //     date: "2025-10-02",
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "Research Topics",
+  //     content: "Key areas to research for the upcoming presentation...",
+  //     tags: ["research", "important"],
+  //     color: "#F3E8FF",
+  //     date: "2025-10-01",
+  //   },
+  // ]);
+
+  const fetchNotes = useCallback(async () => {
+    try {
+      const userId = user?.id || user?._id;
+      if (!userId) return;
+      const response = await notesApi.getNotesByUser(userId);
+      console.log("Fetched notes:", response.data);
+      setNotes(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Error fetching notes:", error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   // All unique tags from notes
-  const allTags = ["all", ...new Set(notes.flatMap((note) => note.tags))];
+  const allTags = [
+    "all",
+    ...new Set(
+      notes.flatMap((note) => (Array.isArray(note.tags) ? note.tags : []))
+    ),
+  ];
+  console.log("All tags:", allTags);
 
   // Filter notes based on search and tags
-  const filteredNotes = notes.filter((note) => {
+  const filteredNotes = coloredNotes.filter((note) => {
     const matchesSearch =
       note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       note.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTag = selectedTag === "all" || note.tags.includes(selectedTag);
     return matchesSearch && matchesTag;
   });
+
+  console.log("Filtered notes:", filteredNotes);
 
   const truncateText = (text, maxLength) => {
     return text.length > maxLength
@@ -71,6 +112,7 @@ const DashboardNotes = () => {
         <button
           className="btn btn-primary d-flex align-items-center gap-2"
           style={{ backgroundColor: accentColor, borderColor: accentColor }}
+          onClick={() => setShowAddNote(true)}
         >
           <PlusCircle size={20} />
           Add New Note
@@ -132,14 +174,13 @@ const DashboardNotes = () => {
           </button>
         ))}
       </div>
-
       {/* Notes Grid/List View */}
       <div
         className={viewMode === "grid" ? "row g-4" : "d-flex flex-column gap-3"}
       >
         {filteredNotes.map((note) => (
           <div
-            key={note.id}
+            key={note.id || note._id}
             className={viewMode === "grid" ? "col-md-4 col-lg-3" : "w-100"}
           >
             <div
@@ -158,7 +199,13 @@ const DashboardNotes = () => {
                     </button>
                     <ul className="dropdown-menu">
                       <li>
-                        <button className="dropdown-item d-flex align-items-center">
+                        <button
+                          className="dropdown-item d-flex align-items-center"
+                          onClick={() => {
+                            setEditingNote(note);
+                            setShowEditNote(true);
+                          }}
+                        >
                           <Edit3 size={16} className="me-2" />
                           Edit Note
                         </button>
@@ -178,7 +225,7 @@ const DashboardNotes = () => {
                     : note.content}
                 </p>
                 <div className="d-flex flex-wrap gap-2 mt-3">
-                  {note.tags.map((tag) => (
+                  {(note.tags || []).map((tag) => (
                     <span
                       key={tag}
                       className="badge bg-white text-dark"
@@ -189,13 +236,43 @@ const DashboardNotes = () => {
                   ))}
                 </div>
                 <small className="text-muted d-block mt-3">
-                  {new Date(note.date).toLocaleDateString()}
+                  {new Date(note.createdAt).toLocaleDateString()}
                 </small>
               </div>
             </div>
           </div>
         ))}
       </div>
+      {showAddNote && (
+        <AddNoteModal
+          open={showAddNote}
+          onClose={() => setShowAddNote(false)}
+          onCreated={() => {
+            setShowAddNote(false);
+            fetchNotes();
+          }}
+          userId={user?.id || user?._id}
+        />
+      )}
+      {showEditNote && (
+        <EditNoteModal
+          open={showEditNote}
+          note={editingNote}
+          onClose={() => {
+            setShowEditNote(false);
+            setEditingNote(null);
+          }}
+          onUpdated={(updated) => {
+            setShowEditNote(false);
+            setEditingNote(null);
+            setNotes((prev) =>
+              prev.map((n) =>
+                (n._id || n.id) === (updated._id || updated.id) ? updated : n
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 };

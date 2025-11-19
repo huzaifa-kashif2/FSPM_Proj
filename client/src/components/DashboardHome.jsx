@@ -14,6 +14,7 @@ const DashboardHome = ({ user }) => {
       console.log("Fetching tasks for user ID:", uid);
       if (!uid) return;
       const response = await tasksApi.getTasksByUser(uid);
+      console.log("Response: ", response.data);
       setTasks(response.data || []);
     } catch (error) {
       console.error("Error fetching tasks:", error);

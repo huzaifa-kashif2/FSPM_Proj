@@ -1,34 +1,21 @@
 import React, { useState } from "react";
-import {
-  Bell,
-  Moon,
-  Sun,
-  Globe,
-  Shield,
-  Mail,
-  Smartphone,
-  User,
-  Lock,
-  Save,
-} from "lucide-react";
+import { Moon, Sun, Globe, Lock, Save, Sliders } from "lucide-react";
 
 const Settings = () => {
   const accentColor = "#319795";
 
   // Sample settings state
   const [settings, setSettings] = useState({
-    // Notifications
-    emailNotifications: true,
-    pushNotifications: true,
-    reminderTime: "1hour",
-
     // Appearance
     theme: "light",
     language: "english",
 
-    // Privacy
-    profileVisibility: "public",
-    showEmail: false,
+    // Task preferences
+    defaultTaskFilter: "all",
+    showOverdueFirst: true,
+    compactTaskRows: false,
+
+    // Security
     twoFactorAuth: false,
   });
 
@@ -54,81 +41,7 @@ const Settings = () => {
       </div>
 
       <div className="row g-4">
-        {/* Notifications Settings */}
-        <div className="col-12 col-lg-6">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex align-items-center mb-4">
-                <Bell
-                  size={24}
-                  className="text-primary me-2"
-                  style={{ color: accentColor }}
-                />
-                <h4 className="card-title mb-0">Notifications</h4>
-              </div>
-
-              <div className="mb-4">
-                <div className="form-check form-switch mb-3">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="emailNotifications"
-                    checked={settings.emailNotifications}
-                    onChange={(e) =>
-                      handleSettingChange(
-                        "emailNotifications",
-                        e.target.checked
-                      )
-                    }
-                  />
-                  <label
-                    className="form-check-label d-flex align-items-center"
-                    htmlFor="emailNotifications"
-                  >
-                    <Mail size={18} className="me-2" />
-                    Email Notifications
-                  </label>
-                </div>
-
-                <div className="form-check form-switch mb-3">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="pushNotifications"
-                    checked={settings.pushNotifications}
-                    onChange={(e) =>
-                      handleSettingChange("pushNotifications", e.target.checked)
-                    }
-                  />
-                  <label
-                    className="form-check-label d-flex align-items-center"
-                    htmlFor="pushNotifications"
-                  >
-                    <Smartphone size={18} className="me-2" />
-                    Push Notifications
-                  </label>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Reminder Time</label>
-                  <select
-                    className="form-select"
-                    value={settings.reminderTime}
-                    onChange={(e) =>
-                      handleSettingChange("reminderTime", e.target.value)
-                    }
-                  >
-                    <option value="30min">30 minutes before</option>
-                    <option value="1hour">1 hour before</option>
-                    <option value="1day">1 day before</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Appearance Settings */}
+        {/* Appearance */}
         <div className="col-12 col-lg-6">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
@@ -190,79 +103,127 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Privacy Settings */}
+        {/* Task Preferences */}
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center mb-4">
+                <Sliders
+                  size={24}
+                  className="me-2"
+                  style={{ color: accentColor }}
+                />
+                <h4 className="card-title mb-0">Task Preferences</h4>
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Default Task Filter</label>
+                <select
+                  className="form-select"
+                  value={settings.defaultTaskFilter}
+                  onChange={(e) =>
+                    handleSettingChange("defaultTaskFilter", e.target.value)
+                  }
+                >
+                  <option value="all">All Tasks</option>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="form-check form-switch mb-3">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="showOverdueFirst"
+                  checked={settings.showOverdueFirst}
+                  onChange={(e) =>
+                    handleSettingChange("showOverdueFirst", e.target.checked)
+                  }
+                />
+                <label className="form-check-label" htmlFor="showOverdueFirst">
+                  Show overdue tasks first
+                </label>
+              </div>
+              <div className="form-check form-switch mb-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="compactTaskRows"
+                  checked={settings.compactTaskRows}
+                  onChange={(e) =>
+                    handleSettingChange("compactTaskRows", e.target.checked)
+                  }
+                />
+                <label className="form-check-label" htmlFor="compactTaskRows">
+                  Use compact task rows
+                </label>
+              </div>
+              <p className="text-muted small mb-0">
+                (These preferences will shape task list rendering.)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Security */}
         <div className="col-12">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
               <div className="d-flex align-items-center mb-4">
-                <Shield
+                <Lock
                   size={24}
-                  className="text-primary me-2"
+                  className="me-2"
                   style={{ color: accentColor }}
                 />
-                <h4 className="card-title mb-0">Privacy & Security</h4>
+                <h4 className="card-title mb-0">Security</h4>
               </div>
-
-              <div className="row g-4">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="form-label d-flex align-items-center">
-                      <User size={18} className="me-2" />
-                      Profile Visibility
-                    </label>
-                    <select
-                      className="form-select"
-                      value={settings.profileVisibility}
-                      onChange={(e) =>
-                        handleSettingChange("profileVisibility", e.target.value)
-                      }
-                    >
-                      <option value="public">Public</option>
-                      <option value="private">Private</option>
-                      <option value="friends">Friends Only</option>
-                    </select>
-                  </div>
-
-                  <div className="form-check form-switch mb-3">
+              <div className="form-check form-switch mb-3">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="twoFactorAuth"
+                  checked={settings.twoFactorAuth}
+                  onChange={(e) =>
+                    handleSettingChange("twoFactorAuth", e.target.checked)
+                  }
+                />
+                <label className="form-check-label" htmlFor="twoFactorAuth">
+                  Enable two-factor authentication
+                </label>
+              </div>
+              <div className="mb-3">
+                <label className="form-label">
+                  Change Password (placeholder)
+                </label>
+                <div className="row g-2">
+                  <div className="col-md-4">
                     <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="showEmail"
-                      checked={settings.showEmail}
-                      onChange={(e) =>
-                        handleSettingChange("showEmail", e.target.checked)
-                      }
+                      type="password"
+                      className="form-control"
+                      placeholder="Current"
+                      disabled
                     />
-                    <label
-                      className="form-check-label d-flex align-items-center"
-                      htmlFor="showEmail"
-                    >
-                      <Mail size={18} className="me-2" />
-                      Show email on profile
-                    </label>
+                  </div>
+                  <div className="col-md-4">
+                    <input
+                      type="password"
+                      className="form-control"
+                      placeholder="New"
+                      disabled
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <input
+                      type="password"
+                      className="form-control"
+                      placeholder="Confirm"
+                      disabled
+                    />
                   </div>
                 </div>
-
-                <div className="col-md-6">
-                  <div className="form-check form-switch mb-3">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="twoFactorAuth"
-                      checked={settings.twoFactorAuth}
-                      onChange={(e) =>
-                        handleSettingChange("twoFactorAuth", e.target.checked)
-                      }
-                    />
-                    <label
-                      className="form-check-label d-flex align-items-center"
-                      htmlFor="twoFactorAuth"
-                    >
-                      <Lock size={18} className="me-2" />
-                      Two-factor authentication
-                    </label>
-                  </div>
-                </div>
+                <small className="text-muted">
+                  (Will be implemented later)
+                </small>
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import Settings from "../components/Settings";
 import Profile from "../components/Profile";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import DashboardAIChecker from "../components/DashboardAIChecker";
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -52,7 +53,12 @@ const Dashboard = () => {
           {location.pathname === "/dashboard/tasks" && (
             <DashboardTasks user={user} />
           )}
-          {location.pathname === "/dashboard/notes" && <DashboardNotes />}
+          {location.pathname === "/dashboard/notes" && (
+            <DashboardNotes user={user} />
+          )}
+          {location.pathname === "/dashboard/ai-check" && (
+            <DashboardAIChecker />
+          )}
           {location.pathname === "/dashboard/settings" && <Settings />}
           {location.pathname === "/dashboard/profile" && <Profile />}
         </main>
