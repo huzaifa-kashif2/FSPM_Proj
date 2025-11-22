@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import noteRoutes from "./routes/noteRoutes.js";
+import plagiarism from "./routes/plagiarism.js";
 
 dotenv.config();
 const app = express();
@@ -26,6 +27,7 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/check", plagiarism);
 
 app.get("/", (req, res) => {
   res.send("API is running...");

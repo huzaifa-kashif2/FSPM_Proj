@@ -53,3 +53,5 @@ server/.env
 
 # Misc
 *.swp
+
+/uploads
