@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   PlusCircle,
   Search,
@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { useEffect } from "react";
 import { tasksApi } from "../api/tasksApi";
 import AddTaskModal from "./AddTaskModal";
 import EditTaskModal from "./EditTaskModal";
@@ -20,6 +19,23 @@ const DashboardTasks = ({ user }) => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+
+  // Load task preferences from localStorage
+  const getTaskPreferences = () => {
+    try {
+      const saved = localStorage.getItem("taskPreferences");
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (err) {
+      console.error("Failed to load task preferences:", err);
+    }
+    return { defaultTaskFilter: "all", showOverdueFirst: true };
+  };
+
+  const taskPreferences = getTaskPreferences();
+  const [filter, setFilter] = useState(taskPreferences.defaultTaskFilter);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchTasks = useCallback(async () => {
     const uid = user?.id || user?._id;
@@ -32,8 +48,15 @@ const DashboardTasks = ({ user }) => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const [filter, setFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  // Determine if a task is overdue (due date before today and not completed)
+  const isTaskOverdue = (task) => {
+    if (task.status === "completed") return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(task.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < today;
+  };
 
   // Filter tasks based on status and search query
   const filteredTasks = tasks.filter((task) => {
@@ -43,6 +66,18 @@ const DashboardTasks = ({ user }) => {
       task.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  // Sort tasks: overdue first if preference is enabled
+  const sortedTasks = [...filteredTasks];
+  if (taskPreferences.showOverdueFirst) {
+    sortedTasks.sort((a, b) => {
+      const aOverdue = isTaskOverdue(a);
+      const bOverdue = isTaskOverdue(b);
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      return 0;
+    });
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -156,77 +191,91 @@ const DashboardTasks = ({ user }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTasks.map((task) => (
-                      <tr key={task.id || task._id}>
-                        <td className="px-4">
-                          <div className="d-flex align-items-center gap-2">
-                            {getStatusIcon(task.status)}
-                            <div>
-                              <h6 className="mb-0">{task.title}</h6>
-                              <small className="text-muted">
-                                {task.description}
-                              </small>
+                    {sortedTasks.map((task) => {
+                      const overdue = isTaskOverdue(task);
+                      return (
+                        <tr
+                          key={task.id || task._id}
+                          className={overdue ? "table-danger" : ""}
+                        >
+                          <td className="px-4">
+                            <div className="d-flex align-items-center gap-2">
+                              {getStatusIcon(task.status)}
+                              <div>
+                                <h6 className="mb-0">{task.title}</h6>
+                                <small className="text-muted">
+                                  {task.description}
+                                </small>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge bg-${getPriorityBadgeColor(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority.charAt(0).toUpperCase() +
-                              task.priority.slice(1)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="text-muted">
-                            {new Date(task.dueDate).toLocaleDateString()}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge bg-${
-                              task.status === "completed"
-                                ? "success"
-                                : task.status === "in-progress"
-                                ? "warning"
-                                : "secondary"
-                            }`}
-                          >
-                            {task.status
-                              .split("-")
-                              .map(
-                                (word) =>
-                                  word.charAt(0).toUpperCase() + word.slice(1)
-                              )
-                              .join(" ")}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
-                            <button
-                              type="button"
-                              className="btn btn-link p-0"
-                              title="Edit"
-                              aria-label={`Edit ${task.title}`}
-                              onClick={() => handleEdit(task)}
+                          </td>
+                          <td>
+                            <span
+                              className={`badge bg-${getPriorityBadgeColor(
+                                task.priority
+                              )}`}
                             >
-                              <Edit size={18} className="text-primary" />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-link p-0"
-                              title="Delete"
-                              aria-label={`Delete ${task.title}`}
-                              onClick={() => handleDelete(task._id)}
+                              {task.priority.charAt(0).toUpperCase() +
+                                task.priority.slice(1)}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                overdue
+                                  ? "text-danger fw-semibold"
+                                  : "text-muted"
+                              }
                             >
-                              <Trash2 size={18} className="text-danger" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              {new Date(task.dueDate).toLocaleDateString()}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={`badge bg-${
+                                task.status === "completed"
+                                  ? "success"
+                                  : overdue
+                                  ? "danger"
+                                  : task.status === "in-progress"
+                                  ? "warning"
+                                  : "secondary"
+                              }`}
+                            >
+                              {task.status
+                                .split("-")
+                                .map(
+                                  (word) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1)
+                                )
+                                .join(" ")}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              <button
+                                type="button"
+                                className="btn btn-link p-0"
+                                title="Edit"
+                                aria-label={`Edit ${task.title}`}
+                                onClick={() => handleEdit(task)}
+                              >
+                                <Edit size={18} className="text-primary" />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-link p-0"
+                                title="Delete"
+                                aria-label={`Delete ${task.title}`}
+                                onClick={() => handleDelete(task._id)}
+                              >
+                                <Trash2 size={18} className="text-danger" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

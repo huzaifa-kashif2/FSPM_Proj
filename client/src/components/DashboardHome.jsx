@@ -1,20 +1,18 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BarChart, Calendar, CheckSquare, Clock } from "lucide-react";
 import { tasksApi } from "../api/tasksApi";
 import AddTaskModal from "./AddTaskModal";
 
 const DashboardHome = ({ user }) => {
-  const accentColor = "#319795";
+  // const accentColor = "#319795";
   const [tasks, setTasks] = useState([]);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   const fetchTasks = async () => {
     try {
       const uid = user?.id || user?._id;
-      console.log("Fetching tasks for user ID:", uid);
       if (!uid) return;
       const response = await tasksApi.getTasksByUser(uid);
-      console.log("Response: ", response.data);
       setTasks(response.data || []);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -22,15 +20,13 @@ const DashboardHome = ({ user }) => {
   };
 
   useEffect(() => {
-    // Fetch tasks when user becomes available
     fetchTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Placeholder data
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toDateString();
-  };
+  const formatDate = (dateStr) => new Date(dateStr).toDateString();
+
+  // Recent tasks (created today) with overdue highlight
   const recentTasks = tasks
     .filter((task) => formatDate(task.createdAt) === new Date().toDateString())
     .map((task) => ({
@@ -38,6 +34,7 @@ const DashboardHome = ({ user }) => {
       title: task.title,
       deadline: formatDate(task.dueDate),
       status: task.status.charAt(0).toUpperCase() + task.status.slice(1),
+      dueDate: task.dueDate,
     }));
 
   const tasksDueToday = tasks.filter((task) => {
@@ -60,12 +57,24 @@ const DashboardHome = ({ user }) => {
     return dueDate > today;
   }).length;
 
-  const tasksUrgent = tasks.filter((task) => {
+  const isOverdue = (dueDateStr) => {
+    if (!dueDateStr) return false;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(dueDateStr);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  };
+
+  // Upcoming soon: due today, tomorrow, day after tomorrow
+  const upcomingSoon = tasks.filter((task) => {
+    if (!task.dueDate || task.status === "completed") return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const dueDate = new Date(task.dueDate);
-    const timeDiff = dueDate - today;
-    const daysDiff = timeDiff / (1000 * 3600 * 24);
-    return daysDiff <= 3 && task.status !== "completed";
+    dueDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((dueDate - today) / (1000 * 3600 * 24));
+    return diffDays >= 0 && diffDays <= 2;
   });
 
   const stats = [
@@ -90,23 +99,15 @@ const DashboardHome = ({ user }) => {
     },
   ];
 
-  const [showAddTask, setShowAddTask] = useState(false);
-  const addTask = () => {
-    setShowAddTask(true);
-  };
-
   return (
     <>
       <div className="p-4">
-        {/* Welcome Section */}
         <div className="mb-4">
           <h1 className="h3 mb-2">Welcome back, {user?.fullName}!</h1>
           <p className="text-muted">
             Here's what's happening with your tasks today.
           </p>
         </div>
-
-        {/* Stats Grid */}
         <div className="row g-4 mb-4">
           {stats.map((stat, index) => (
             <div key={index} className="col-md-6 col-lg-3">
@@ -131,21 +132,12 @@ const DashboardHome = ({ user }) => {
             </div>
           ))}
         </div>
-
-        {/* Main Content Grid */}
         <div className="row g-4">
-          {/* Recent Tasks */}
           <div className="col-lg-8">
             <div className="card border-0 shadow-sm">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h5 className="card-title mb-0">Recent Tasks</h5>
-                  <button
-                    className="btn btn-sm"
-                    style={{ backgroundColor: accentColor, color: "white" }}
-                  >
-                    View All
-                  </button>
                 </div>
                 <div className="table-responsive">
                   <table className="table table-hover align-middle">
@@ -157,109 +149,86 @@ const DashboardHome = ({ user }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentTasks.map((task) => (
-                        <tr key={task.id || task._id}>
-                          <td>{task.title}</td>
-                          <td>{task.deadline}</td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                task.status === "In-progress"
-                                  ? "bg-warning"
-                                  : task.status === "Pending"
-                                  ? "bg-danger"
-                                  : "bg-success"
-                              }`}
-                            >
-                              {task.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {recentTasks.map((task) => {
+                        const overdue =
+                          isOverdue(task.dueDate) &&
+                          task.status.toLowerCase() !== "completed";
+                        return (
+                          <tr
+                            key={task.id}
+                            className={overdue ? "table-danger" : ""}
+                          >
+                            <td>{task.title}</td>
+                            <td>
+                              <span
+                                className={
+                                  overdue
+                                    ? "text-danger fw-semibold"
+                                    : "text-muted"
+                                }
+                              >
+                                {task.deadline}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                className={`badge ${
+                                  task.status === "In-progress"
+                                    ? "bg-warning"
+                                    : task.status === "Pending"
+                                    ? "bg-danger"
+                                    : "bg-success"
+                                }`}
+                              >
+                                {task.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Quick Actions */}
           <div className="col-lg-4">
             <div className="card border-0 shadow-sm">
               <div className="card-body">
-                <h5 className="card-title mb-4">Quick Actions</h5>
-                <div className="d-grid gap-2">
-                  <button
-                    className="btn btn-outline-primary d-flex align-items-center gap-2 justify-content-center"
-                    onClick={addTask}
-                  >
-                    <i className="bi bi-plus-circle"></i>
-                    New Task
-                  </button>
-                  <button className="btn btn-outline-success d-flex align-items-center gap-2 justify-content-center">
-                    <i className="bi bi-journal-plus"></i>
-                    Add Note
-                  </button>
-                  <button className="btn btn-outline-info d-flex align-items-center gap-2 justify-content-center">
-                    <i className="bi bi-calendar-plus"></i>
-                    Schedule Meeting
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Calendar Widget */}
-            <div className="card border-0 shadow-sm mt-4">
-              <div className="card-body">
                 <h5 className="card-title mb-3">Upcoming Deadlines</h5>
-                {/* <div className="list-group list-group-flush">
-                <div className="list-group-item d-flex justify-content-between align-items-center px-0">
-                  <div>
-                    <h6 className="mb-0">Project Review</h6>
-                    <small className="text-muted">Today, 2:00 PM</small>
-                  </div>
-                  <span className="badge bg-danger">Due</span>
-                </div>
-                <div className="list-group-item d-flex justify-content-between align-items-center px-0">
-                  <div>
-                    <h6 className="mb-0">Team Meeting</h6>
-                    <small className="text-muted">Tomorrow, 10:00 AM</small>
-                  </div>
-                  <span className="badge bg-warning">Tomorrow</span>
-                </div>
-              </div> */}
-                {tasksUrgent.length === 0 ? (
-                  <p className="text-muted">No upcoming urgent tasks.</p>
+                {upcomingSoon.length === 0 ? (
+                  <p className="text-muted">No tasks due in the next 3 days.</p>
                 ) : (
                   <div className="list-group list-group-flush">
-                    {tasksUrgent.map((task) => (
-                      <div
-                        key={task._id}
-                        className="list-group-item d-flex justify-content-between align-items-center px-0"
-                      >
-                        <div>
-                          <h6 className="mb-0">{task.title}</h6>
-                          <small className="text-muted">
-                            {formatDate(task.dueDate)}
-                          </small>
+                    {upcomingSoon.map((task) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const dueDate = new Date(task.dueDate);
+                      dueDate.setHours(0, 0, 0, 0);
+                      const diffDays = Math.round(
+                        (dueDate - today) / (1000 * 3600 * 24)
+                      );
+                      const label =
+                        diffDays === 0
+                          ? "Due Today"
+                          : diffDays === 1
+                          ? "Due Tomorrow"
+                          : "Due Day After Tomorrow";
+                      return (
+                        <div
+                          key={task._id}
+                          className="list-group-item d-flex justify-content-between align-items-center px-0"
+                        >
+                          <div>
+                            <h6 className="mb-0">{task.title}</h6>
+                            <small className="text-muted">
+                              {formatDate(task.dueDate)}
+                            </small>
+                          </div>
+                          <span className="badge bg-danger">{label}</span>
                         </div>
-                        <span className="badge bg-danger">
-                          {formatDate(task.dueDate) === formatDate(new Date())
-                            ? "Due Today"
-                            : formatDate(task.dueDate) ===
-                              formatDate(
-                                new Date().setDate(new Date().getDate() + 1)
-                              )
-                            ? "Due Tomorrow"
-                            : formatDate(task.dueDate) ===
-                              formatDate(
-                                new Date().setDate(new Date().getDate() + 2)
-                              )
-                            ? "Due day after tomorrow"
-                            : "Due Soon"}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

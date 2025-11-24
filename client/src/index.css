@@ -10,3 +10,30 @@
 .nav-link.active {
   background-color: rgba(255, 255, 255, 0.2) !important;
 }
+
+/* Theme variables */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #1a202c;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+}
+
+.theme-dark {
+  --bg-color: #1a202c;
+  --text-color: #f8fafc;
+  --card-bg: #2d3748;
+  --border-color: #4a5568;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color) !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}

@@ -1,5 +1,17 @@
-import React, { useState } from "react";
-import { User, Mail, Edit2, Camera, CheckCircle, BookOpen } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  User,
+  Mail,
+  Edit2,
+  Camera,
+  CheckCircle,
+  BookOpen,
+  Save,
+  X,
+} from "lucide-react";
+import { authApi } from "../api/authApi";
+import { tasksApi } from "../api/tasksApi";
+import { notesApi } from "../api/notesApi";
 
 const Profile = () => {
   const accentColor = "#319795";
@@ -13,28 +25,171 @@ const Profile = () => {
         name: stored?.fullName || stored?.name || "User",
         email: stored?.email || "user@example.com",
         avatar: null,
-        bio: "Manage your tasks and notes efficiently.",
       };
     } catch {
       return {
         name: "User",
         email: "user@example.com",
         avatar: null,
-        bio: "Manage your tasks and notes efficiently.",
       };
     }
   });
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: user.name,
+    email: user.email,
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   // Sample statistics
-  const statistics = [
+  const [statistics, setStatistics] = useState([
     {
       title: "Tasks Completed",
-      value: "--",
+      value: "...",
       icon: CheckCircle,
       color: "#319795",
     },
-    { title: "Notes Created", value: "--", icon: BookOpen, color: "#3182CE" },
-  ];
+    { title: "Notes Created", value: "...", icon: BookOpen, color: "#3182CE" },
+  ]);
+
+  // Fetch task and note counts
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const authUser = JSON.parse(localStorage.getItem("authUser") || "{}");
+        const userId = authUser.id;
+
+        if (!userId) {
+          console.error("User ID not found");
+          return;
+        }
+
+        const [tasksResponse, notesResponse] = await Promise.all([
+          tasksApi.getTasksByUser(userId),
+          notesApi.getNotesByUser(userId),
+        ]);
+
+        console.log("Fetched tasks:", tasksResponse);
+
+        const completedTasks = tasksResponse.data.filter(
+          (task) => task.status === "completed"
+        ).length;
+
+        console.log("Completed tasks:", completedTasks);
+
+        setStatistics([
+          {
+            title: "Tasks Completed",
+            value: completedTasks,
+            icon: CheckCircle,
+            color: "#319795",
+          },
+          {
+            title: "Notes Created",
+            value: notesResponse.data.length,
+            icon: BookOpen,
+            color: "#3182CE",
+          },
+        ]);
+      } catch (err) {
+        console.error("Failed to fetch statistics:", err);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // Cancel editing
+      setEditForm({
+        fullName: user.name,
+        email: user.email,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setError("");
+      setSuccess("");
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveProfile = async () => {
+    setError("");
+    setSuccess("");
+
+    // Validate passwords if changing
+    if (
+      editForm.newPassword ||
+      editForm.currentPassword ||
+      editForm.confirmPassword
+    ) {
+      if (!editForm.currentPassword) {
+        setError("Current password is required to change password");
+        return;
+      }
+      if (!editForm.newPassword) {
+        setError("New password is required");
+        return;
+      }
+      if (editForm.newPassword !== editForm.confirmPassword) {
+        setError("New passwords do not match");
+        return;
+      }
+      if (editForm.newPassword.length < 6) {
+        setError("New password must be at least 6 characters");
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const updateData = {
+        fullName: editForm.fullName,
+        email: editForm.email,
+      };
+
+      if (editForm.currentPassword && editForm.newPassword) {
+        updateData.currentPassword = editForm.currentPassword;
+        updateData.newPassword = editForm.newPassword;
+      }
+
+      const response = await authApi.updateProfile(updateData);
+
+      // Update local state and localStorage
+      setUser({
+        ...user,
+        name: response.data.user.fullName,
+        email: response.data.user.email,
+      });
+
+      const authUser = JSON.parse(localStorage.getItem("authUser") || "{}");
+      authUser.fullName = response.data.user.fullName;
+      authUser.email = response.data.user.email;
+      localStorage.setItem("authUser", JSON.stringify(authUser));
+
+      setSuccess("Profile updated successfully!");
+      setIsEditing(false);
+      setEditForm({
+        fullName: response.data.user.fullName,
+        email: response.data.user.email,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -98,12 +253,22 @@ const Profile = () => {
                         backgroundColor: accentColor,
                         borderColor: accentColor,
                       }}
+                      onClick={handleEditToggle}
                     >
-                      <Edit2 size={18} />
-                      Edit Profile
+                      {isEditing ? (
+                        <>
+                          <X size={18} />
+                          Cancel
+                        </>
+                      ) : (
+                        <>
+                          <Edit2 size={18} />
+                          Edit Profile
+                        </>
+                      )}
                     </button>
                   </div>
-                  <p className="text-muted mb-0">{user.bio}</p>
+                  <p className="text-muted mb-0">{user.email}</p>
                 </div>
               </div>
             </div>
@@ -140,7 +305,20 @@ const Profile = () => {
         <div className="col-12">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <h4 className="card-title mb-4">Account</h4>
+              <h4 className="card-title mb-4">Account Information</h4>
+
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="alert alert-success" role="alert">
+                  {success}
+                </div>
+              )}
+
               <div className="row g-4">
                 <div className="col-md-6">
                   <div className="mb-3">
@@ -148,15 +326,12 @@ const Profile = () => {
                     <input
                       type="text"
                       className="form-control"
-                      value={user.name}
+                      value={isEditing ? editForm.fullName : user.name}
                       onChange={(e) =>
-                        setUser((p) => ({ ...p, name: e.target.value }))
+                        setEditForm((p) => ({ ...p, fullName: e.target.value }))
                       }
-                      disabled
+                      disabled={!isEditing}
                     />
-                    <small className="text-muted">
-                      (Editable implementation pending)
-                    </small>
                   </div>
                   <div className="mb-3">
                     <label className="form-label d-flex align-items-center">
@@ -165,46 +340,85 @@ const Profile = () => {
                     <input
                       type="email"
                       className="form-control"
-                      value={user.email}
-                      disabled
+                      value={isEditing ? editForm.email : user.email}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, email: e.target.value }))
+                      }
+                      disabled={!isEditing}
                     />
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label">
-                    Change Password (placeholder)
-                  </label>
-                  <div className="row g-2 mb-2">
-                    <div className="col-12 col-lg-4">
-                      <input
-                        type="password"
-                        className="form-control"
-                        placeholder="Current"
-                        disabled
-                      />
-                    </div>
-                    <div className="col-12 col-lg-4">
-                      <input
-                        type="password"
-                        className="form-control"
-                        placeholder="New"
-                        disabled
-                      />
-                    </div>
-                    <div className="col-12 col-lg-4">
-                      <input
-                        type="password"
-                        className="form-control"
-                        placeholder="Confirm"
-                        disabled
-                      />
-                    </div>
+                  <label className="form-label">Change Password</label>
+                  <div className="mb-2">
+                    <input
+                      type="password"
+                      className="form-control mb-2"
+                      placeholder="Current Password"
+                      value={editForm.currentPassword}
+                      onChange={(e) =>
+                        setEditForm((p) => ({
+                          ...p,
+                          currentPassword: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
                   </div>
-                  <small className="text-muted">
-                    Password update flow will be added later.
-                  </small>
+                  <div className="mb-2">
+                    <input
+                      type="password"
+                      className="form-control mb-2"
+                      placeholder="New Password"
+                      value={editForm.newPassword}
+                      onChange={(e) =>
+                        setEditForm((p) => ({
+                          ...p,
+                          newPassword: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <input
+                      type="password"
+                      className="form-control"
+                      placeholder="Confirm New Password"
+                      value={editForm.confirmPassword}
+                      onChange={(e) =>
+                        setEditForm((p) => ({
+                          ...p,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  {!isEditing && (
+                    <small className="text-muted">
+                      Click Edit Profile to change your password
+                    </small>
+                  )}
                 </div>
               </div>
+
+              {isEditing && (
+                <div className="mt-4">
+                  <button
+                    className="btn btn-primary d-flex align-items-center gap-2"
+                    style={{
+                      backgroundColor: accentColor,
+                      borderColor: accentColor,
+                    }}
+                    onClick={handleSaveProfile}
+                    disabled={loading}
+                  >
+                    <Save size={18} />
+                    {loading ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

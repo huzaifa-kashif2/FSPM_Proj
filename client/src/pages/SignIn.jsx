@@ -38,16 +38,18 @@ const SignIn = () => {
       if (data?.mfaRequired) {
         setShowMfa(true);
       } else if (data?.token) {
-        // In case server ever returns full login without MFA
+        // MFA is disabled, proceed with login directly
         localStorage.setItem("authToken", data.token);
         if (data?.user) {
           localStorage.setItem("authUser", JSON.stringify(data.user));
+          setUser(data.user);
         }
+        navigate("/dashboard", { replace: true });
       } else {
         // Fallback: unexpected response
         setFormError("Unexpected response from server.");
       }
-      if (data?.user) {
+      if (data?.user && !data?.token) {
         setUser(data.user);
       }
     } catch (error) {

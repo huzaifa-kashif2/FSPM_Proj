@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Moon, Sun, Globe, Lock, Save, Sliders } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Moon, Sun, Lock, Save, Sliders } from "lucide-react";
+import { authApi } from "../api/authApi";
 
 const Settings = () => {
   const accentColor = "#319795";
@@ -8,7 +9,6 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     // Appearance
     theme: "light",
-    language: "english",
 
     // Task preferences
     defaultTaskFilter: "all",
@@ -16,15 +16,89 @@ const Settings = () => {
     compactTaskRows: false,
 
     // Security
-    twoFactorAuth: false,
+    twoFactorAuth: true,
   });
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  // Fetch MFA settings on component mount
+  useEffect(() => {
+    const fetchMfaSettings = async () => {
+      try {
+        const response = await authApi.getMfaSettings();
+        setSettings((prev) => ({
+          ...prev,
+          twoFactorAuth: response.data.mfaEnabled,
+        }));
+      } catch (err) {
+        console.error("Failed to fetch MFA settings:", err);
+      }
+    };
+
+    // Load saved settings from localStorage
+    const savedSettings = localStorage.getItem("taskPreferences");
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings((prev) => ({
+          ...prev,
+          defaultTaskFilter: parsed.defaultTaskFilter || "all",
+          showOverdueFirst:
+            parsed.showOverdueFirst !== undefined
+              ? parsed.showOverdueFirst
+              : true,
+        }));
+      } catch (err) {
+        console.error("Failed to parse saved settings:", err);
+      }
+    }
+
+    fetchMfaSettings();
+  }, []);
+
   const handleSettingChange = (key, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setSettings((prev) => ({ ...prev, [key]: value }));
   };
+
+  const handleSaveSettings = async () => {
+    setMessage("");
+    setError("");
+    setLoading(true);
+
+    try {
+      // Save MFA settings
+      await authApi.updateMfaSettings({
+        mfaEnabled: settings.twoFactorAuth,
+      });
+
+      // Save task preferences to localStorage
+      const taskPreferences = {
+        defaultTaskFilter: settings.defaultTaskFilter,
+        showOverdueFirst: settings.showOverdueFirst,
+      };
+      localStorage.setItem("taskPreferences", JSON.stringify(taskPreferences));
+
+      setMessage("Settings saved successfully!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save settings");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply theme to document root (light/dark)
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === "dark") {
+      root.classList.add("theme-dark");
+    } else {
+      root.classList.remove("theme-dark");
+    }
+  }, [settings.theme]);
 
   return (
     <div className="container-fluid px-4">
@@ -34,77 +108,29 @@ const Settings = () => {
         <button
           className="btn btn-primary d-flex align-items-center gap-2"
           style={{ backgroundColor: accentColor, borderColor: accentColor }}
+          onClick={handleSaveSettings}
+          disabled={loading}
         >
           <Save size={20} />
-          Save Changes
+          {loading ? "Saving..." : "Save Changes"}
         </button>
       </div>
 
-      <div className="row g-4">
-        {/* Appearance */}
-        <div className="col-12 col-lg-6">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex align-items-center mb-4">
-                <Sun
-                  size={24}
-                  className="text-primary me-2"
-                  style={{ color: accentColor }}
-                />
-                <h4 className="card-title mb-0">Appearance</h4>
-              </div>
-
-              <div className="mb-4">
-                <label className="form-label">Theme</label>
-                <div className="d-flex gap-2">
-                  <button
-                    className={`btn ${
-                      settings.theme === "light"
-                        ? "btn-dark"
-                        : "btn-outline-dark"
-                    }`}
-                    onClick={() => handleSettingChange("theme", "light")}
-                  >
-                    <Sun size={18} className="me-2" />
-                    Light
-                  </button>
-                  <button
-                    className={`btn ${
-                      settings.theme === "dark"
-                        ? "btn-dark"
-                        : "btn-outline-dark"
-                    }`}
-                    onClick={() => handleSettingChange("theme", "dark")}
-                  >
-                    <Moon size={18} className="me-2" />
-                    Dark
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label d-flex align-items-center">
-                  <Globe size={18} className="me-2" />
-                  Language
-                </label>
-                <select
-                  className="form-select"
-                  value={settings.language}
-                  onChange={(e) =>
-                    handleSettingChange("language", e.target.value)
-                  }
-                >
-                  <option value="english">English</option>
-                  <option value="spanish">Spanish</option>
-                  <option value="french">French</option>
-                </select>
-              </div>
-            </div>
-          </div>
+      {message && (
+        <div className="alert alert-success" role="alert">
+          {message}
         </div>
+      )}
 
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
+
+      <div className="row g-4">
         {/* Task Preferences */}
-        <div className="col-12 col-lg-6">
+        <div className="col-12">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
               <div className="d-flex align-items-center mb-4">
@@ -144,23 +170,6 @@ const Settings = () => {
                   Show overdue tasks first
                 </label>
               </div>
-              <div className="form-check form-switch mb-2">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="compactTaskRows"
-                  checked={settings.compactTaskRows}
-                  onChange={(e) =>
-                    handleSettingChange("compactTaskRows", e.target.checked)
-                  }
-                />
-                <label className="form-check-label" htmlFor="compactTaskRows">
-                  Use compact task rows
-                </label>
-              </div>
-              <p className="text-muted small mb-0">
-                (These preferences will shape task list rendering.)
-              </p>
             </div>
           </div>
         </div>
@@ -190,40 +199,6 @@ const Settings = () => {
                 <label className="form-check-label" htmlFor="twoFactorAuth">
                   Enable two-factor authentication
                 </label>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">
-                  Change Password (placeholder)
-                </label>
-                <div className="row g-2">
-                  <div className="col-md-4">
-                    <input
-                      type="password"
-                      className="form-control"
-                      placeholder="Current"
-                      disabled
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <input
-                      type="password"
-                      className="form-control"
-                      placeholder="New"
-                      disabled
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <input
-                      type="password"
-                      className="form-control"
-                      placeholder="Confirm"
-                      disabled
-                    />
-                  </div>
-                </div>
-                <small className="text-muted">
-                  (Will be implemented later)
-                </small>
               </div>
             </div>
           </div>

@@ -99,23 +99,31 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // If token is not provided, only credentials validation is requested
-    if (!token?.trim()) {
-      return res.status(200).json({
-        message: "Credentials verified. MFA required.",
-        mfaRequired: true,
+    // Check if MFA is enabled for this user
+    if (user.mfaEnabled) {
+      // If token is not provided, only credentials validation is requested
+      if (!token?.trim()) {
+        return res.status(200).json({
+          message: "Credentials verified. MFA required.",
+          mfaRequired: true,
+        });
+      }
+
+      const verified = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: "base32",
+        token: token.trim(),
+        window: 2,
       });
-    }
 
-    const verified = speakeasy.totp.verify({
-      secret: user.mfaSecret,
-      encoding: "base32",
-      token: token.trim(),
-      window: 2,
-    });
-
-    if (!verified) {
-      return res.status(401).json({ message: "Invalid MFA code" });
+      if (!verified) {
+        return res.status(401).json({ message: "Invalid MFA code" });
+      }
+    } else {
+      // MFA is disabled, skip MFA verification
+      if (!token?.trim()) {
+        // No MFA required, proceed with login
+      }
     }
 
     const jwtToken = jwt.sign(
@@ -157,4 +165,105 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   // logout handled on the client side because jwt is stateless
   res.json({ message: "Logout successful" });
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { fullName, email, currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update name if provided
+    if (fullName?.trim()) {
+      user.fullName = fullName.trim();
+    }
+
+    // Update email if provided and not already taken
+    if (email?.trim() && email.trim() !== user.email) {
+      const existingUser = await User.findOne({ email: email.trim() });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      user.email = email.trim();
+    }
+
+    // Update password if both current and new passwords are provided
+    if (currentPassword && newPassword) {
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+      if (!isPasswordValid) {
+        return res
+          .status(401)
+          .json({ message: "Current password is incorrect" });
+      }
+      user.password = await bcrypt.hash(newPassword.trim(), 10);
+    }
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Profile update failed",
+      error: err.message,
+    });
+  }
+};
+
+export const updateMfaSettings = async (req, res) => {
+  try {
+    const { mfaEnabled } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.mfaEnabled = mfaEnabled;
+    await user.save();
+
+    res.json({
+      message: "MFA settings updated successfully",
+      mfaEnabled: user.mfaEnabled,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to update MFA settings",
+      error: err.message,
+    });
+  }
+};
+
+export const getMfaSettings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      mfaEnabled: user.mfaEnabled,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch MFA settings",
+      error: err.message,
+    });
+  }
 };
